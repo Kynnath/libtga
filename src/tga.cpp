@@ -82,21 +82,21 @@ namespace tga
     };
 
     int BitsToBytes( unsigned char const& i_bits );
-    int UCharArrayToInt( unsigned char const* i_char, int const& i_arrayLength );
+    int UCharArrayLEToInt( unsigned char const*const i_char, int const& i_arrayLength );
 
     int BitsToBytes( unsigned char const& i_bits )
     {
         return ( i_bits%8 != 0 )? i_bits/8 + 1 : i_bits/8;
     }
 
-    int UCharArrayToInt( unsigned char const* i_char, int const& i_arrayLength )
+    int UCharArrayLEToInt( unsigned char const*const i_char, int const& i_arrayLength )
     {
         assert( i_arrayLength > 0 && i_arrayLength <= 4 );
 
         int accumulator = 0;
         for( auto index = 0; index < i_arrayLength; ++index )
         {
-            accumulator += *(i_char[index]) << (8*index);
+            accumulator += ( i_char[index] << (8*index) );
         }
         return accumulator;
     }
@@ -107,8 +107,8 @@ namespace tga
 
         // Read footer and determine kind of tga file
         Footer footer;
-        imageFile.seekg( sizeof(Footer), std::ios::end );
-        imageFile.read( reinterpret_cast<char*>(&footer), sizeof( Footer ) );
+        imageFile.seekg( static_cast<std::ios::off_type>(sizeof(Footer)), std::ios::end );
+        imageFile.read( reinterpret_cast<char*>(&footer), static_cast<std::streamsize>(sizeof( Footer )) );
         if ( !imageFile.good() )
         {
             throw 0;
@@ -119,7 +119,7 @@ namespace tga
             // TGA v2
             imageFile.seekg( 0, std::ios::beg );
             Header header;
-            imageFile.read( reinterpret_cast<char*>(&header), sizeof( Header ) );
+            imageFile.read( reinterpret_cast<char*>(&header), static_cast<std::streamsize>(sizeof( Header )) );
 
             if ( !imageFile.good() )
             {
@@ -138,15 +138,12 @@ namespace tga
                 }
             }
 
-            // Color Map type tells us if we have a color map
             if ( header.m_colorMapType[0] == 1 )
             {
-                // Color Map spec tells us the size
-                // Values are little endian
                 int const colorEntrySize = BitsToBytes( header.m_colorMapSpec[4] );
-                int const colorMapSize = ( header.m_colorMapSpec[2] + header.m_colorMapSpec[3] << 8 ) * colorEntrySize;
+                int const colorMapSize = UCharArrayLEToInt( &header.m_colorMapSpec[2], 2 ) * colorEntrySize;
 
-                imageData.m_colorMap = std::unique_ptr<char[]>{ new char [ colorMapSize ] };
+                imageData.m_colorMap = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(colorMapSize) ] };
                 imageFile.read( imageData.m_colorMap.get(), colorMapSize );
 
                 if ( !imageFile.good() )
@@ -157,8 +154,8 @@ namespace tga
 
             if ( header.m_imageType[0] != 0 )
             {
-                int const width = header.m_imageSpec[4] + header.m_imageSpec[5] << 8;
-                int const height = header.m_imageSpec[6] + header.m_imageSpec[7] << 8;
+                int const width = UCharArrayLEToInt( &header.m_imageSpec[4], 2 );
+                int const height = UCharArrayLEToInt( &header.m_imageSpec[6], 2 );
 
             }
 
