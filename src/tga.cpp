@@ -67,107 +67,146 @@ namespace tga
         'T','R','U','E','V','I','S','I','O','N','-','X','F','I','L','E'
     };
 
-    struct ImageType
+    class ImageType
     {
-        enum
+        enum Flags
         {
             k_noData = 0,
-            k_uncompressedColorMapped = 1,
-            k_uncompressedTrueColor = 2,
-            k_uncompressedBlackAndWhite = 3,
-            k_runLengthEncodedColorMapped = 9,
-            k_runLengthEncodedTrueColor = 10,
-            k_runLengthEncodedBlackAndWhite = 11
+            k_ColorMapped = 1,
+            k_TrueColor = 2,
+            k_BlackAndWhite = 3,
+            k_runLengthEncoded = 8
         };
     };
 
-    int BitsToBytes( unsigned char const& i_bits );
-    int UCharArrayLEToInt( unsigned char const*const i_char, int const& i_arrayLength );
-
-    int BitsToBytes( unsigned char const& i_bits )
+    class ImageOrigin
     {
-        return ( i_bits%8 != 0 )? i_bits/8 + 1 : i_bits/8;
+        enum Direction
+        {
+            k_right = 1,
+            k_top = 2
+        };
+    };
+
+    int BitsToBytes( int const& i_bits );
+    int UCharArrayLEToInt( unsigned char const*const i_char, int const& i_arrayLength );
+    Header ReadHeader( std::ifstream & i_imageFile );
+    ImageData ReadImageData( std::ifstream & i_imageFile, Header const& i_header );
+    Footer ReadFooter( std::ifstream & i_imageFile );
+
+    int BitsToBytes( int const& i_bits )
+    {
+        return ( ( i_bits+7 ) / 8 );
     }
 
     int UCharArrayLEToInt( unsigned char const*const i_char, int const& i_arrayLength )
     {
         assert( i_arrayLength > 0 && i_arrayLength <= 4 );
 
-        int accumulator = 0;
+        int result = 0;
         for( auto index = 0; index < i_arrayLength; ++index )
         {
-            accumulator += ( i_char[index] << (8*index) );
+            result |= ( i_char[index] << (8*index) );
         }
-        return accumulator;
+        return result;
+    }
+
+    Header ReadHeader( std::ifstream & i_imageFile )
+    {
+        Header header;
+        i_imageFile.seekg( 0, std::ios::beg );
+        i_imageFile.read( reinterpret_cast<char*>(&header), static_cast<std::streamsize>(sizeof( Header )) );
+
+        if ( !i_imageFile.good() )
+        {
+            throw 1;
+        }
+
+        return header;
+    }
+
+    ImageData ReadImageData( std::ifstream & i_imageFile, Header const& i_header )
+    {
+        ImageData imageData;
+
+        i_imageFile.seekg( static_cast<std::ios::off_type>(sizeof(Footer)), std::ios::beg );
+
+        if ( i_header.m_idLength[0] > 0 )
+        {
+            imageData.m_imageID = std::unique_ptr<char[]>{ new char [ i_header.m_idLength[0] ] };
+            i_imageFile.read( imageData.m_imageID.get(), i_header.m_idLength[0] );
+
+            if ( !i_imageFile.good() )
+            {
+                throw 2;
+            }
+        }
+
+        if ( i_header.m_colorMapType[0] == 1 )
+        {
+            int const colorEntrySize = BitsToBytes( i_header.m_colorMapSpec[4] );
+            int const colorMapSize = UCharArrayLEToInt( &i_header.m_colorMapSpec[2], 2 ) * colorEntrySize;
+
+            imageData.m_colorMap = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(colorMapSize) ] };
+            i_imageFile.read( imageData.m_colorMap.get(), colorMapSize );
+
+            if ( !i_imageFile.good() )
+            {
+                throw 3;
+            }
+        }
+
+        if ( i_header.m_imageType[0] != 0 )
+        {
+            int const width = UCharArrayLEToInt( &i_header.m_imageSpec[4], 2 );
+            int const height = UCharArrayLEToInt( &i_header.m_imageSpec[6], 2 );
+            int const pixelDepth = BitsToBytes( i_header.m_imageSpec[8] );
+            int const imageSize = width * height * pixelDepth;
+
+            imageData.m_imageData = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(imageSize) ] };
+            i_imageFile.read( imageData.m_imageData.get(), imageSize );
+
+            if ( i_imageFile.good() )
+            {
+                throw 4;
+            }
+        }
+
+        return imageData;
+    }
+
+    Footer ReadFooter( std::ifstream & i_imageFile )
+    {
+        Footer footer;
+        i_imageFile.seekg( -static_cast<std::ios::off_type>(sizeof(Footer)), std::ios::end );
+        i_imageFile.read( reinterpret_cast<char*>(&footer), static_cast<std::streamsize>(sizeof( Footer )) );
+
+        if ( !i_imageFile.good() )
+        {
+            throw 0;
+        }
+
+        return footer;
     }
 
     Image MakeImage( std::string const& i_filename )
     {
         std::ifstream imageFile ( i_filename, std::ifstream::binary );
-
-        // Read footer and determine kind of tga file
-        Footer footer;
-        imageFile.seekg( static_cast<std::ios::off_type>(sizeof(Footer)), std::ios::end );
-        imageFile.read( reinterpret_cast<char*>(&footer), static_cast<std::streamsize>(sizeof( Footer )) );
         if ( !imageFile.good() )
         {
-            throw 0;
+            throw -1;
         }
 
+        // Read footer and determine kind of tga file
+        Footer const footer = ReadFooter( imageFile );
         if ( footer.m_signature == k_signature )
         {
-            // TGA v2
-            imageFile.seekg( 0, std::ios::beg );
-            Header header;
-            imageFile.read( reinterpret_cast<char*>(&header), static_cast<std::streamsize>(sizeof( Header )) );
-
-            if ( !imageFile.good() )
-            {
-                throw 1;
-            }
-
-            ImageData imageData;
-            if ( header.m_idLength[0] > 0 )
-            {
-                imageData.m_imageID = std::unique_ptr<char[]>{ new char [ header.m_idLength[0] ] };
-                imageFile.read( imageData.m_imageID.get(), header.m_idLength[0] );
-
-                if ( !imageFile.good() )
-                {
-                    throw 2;
-                }
-            }
-
-            if ( header.m_colorMapType[0] == 1 )
-            {
-                int const colorEntrySize = BitsToBytes( header.m_colorMapSpec[4] );
-                int const colorMapSize = UCharArrayLEToInt( &header.m_colorMapSpec[2], 2 ) * colorEntrySize;
-
-                imageData.m_colorMap = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(colorMapSize) ] };
-                imageFile.read( imageData.m_colorMap.get(), colorMapSize );
-
-                if ( !imageFile.good() )
-                {
-                    throw 3;
-                }
-            }
-
-            if ( header.m_imageType[0] != 0 )
-            {
-                int const width = UCharArrayLEToInt( &header.m_imageSpec[4], 2 );
-                int const height = UCharArrayLEToInt( &header.m_imageSpec[6], 2 );
-
-            }
-
 
         }
-        else
-        {
-            // TGA v1
-        }
 
+        Header const header = ReadHeader( imageFile );
 
-
+        ImageData const imageData = ReadImageData( imageFile, header );
 
 
 
