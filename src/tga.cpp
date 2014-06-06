@@ -9,6 +9,7 @@
 
 #include <array>
 #include <cassert>
+#include <cstring>
 #include <fstream>
 #include <memory>
 #include <vector>
@@ -67,9 +68,17 @@ namespace tga
         'T','R','U','E','V','I','S','I','O','N','-','X','F','I','L','E'
     };
 
-    class ImageType
+    struct ColorMap
     {
-        enum Flags
+        enum
+        {
+            k_included = 1
+        };
+    };
+
+    struct ImageType
+    {
+        enum
         {
             k_noData = 0,
             k_ColorMapped = 1,
@@ -79,20 +88,20 @@ namespace tga
         };
     };
 
-    class ImageOrigin
+    struct ImageOrigin
     {
-        enum Direction
+        enum
         {
-            k_right = 1,
-            k_top = 2
+            k_right = 0x10,
+            k_top = 0x20
         };
     };
 
     int BitsToBytes( int const& i_bits );
     int UCharArrayLEToInt( unsigned char const*const i_char, int const& i_arrayLength );
-    Header ReadHeader( std::ifstream & i_imageFile );
-    ImageData ReadImageData( std::ifstream & i_imageFile, Header const& i_header );
-    Footer ReadFooter( std::ifstream & i_imageFile );
+    Header ReadHeader( std::ifstream & io_imageFile );
+    ImageData ReadImageData( std::ifstream & io_imageFile, Header const& i_header );
+    Footer ReadFooter( std::ifstream & io_imageFile );
 
     int BitsToBytes( int const& i_bits )
     {
@@ -111,13 +120,13 @@ namespace tga
         return result;
     }
 
-    Header ReadHeader( std::ifstream & i_imageFile )
+    Header ReadHeader( std::ifstream & io_imageFile )
     {
         Header header;
-        i_imageFile.seekg( 0, std::ios::beg );
-        i_imageFile.read( reinterpret_cast<char*>(&header), static_cast<std::streamsize>(sizeof( Header )) );
+        io_imageFile.seekg( 0, std::ios::beg );
+        io_imageFile.read( reinterpret_cast<char*>(&header), static_cast<std::streamsize>(sizeof( Header )) );
 
-        if ( !i_imageFile.good() )
+        if ( !io_imageFile.good() )
         {
             throw 1;
         }
@@ -125,38 +134,38 @@ namespace tga
         return header;
     }
 
-    ImageData ReadImageData( std::ifstream & i_imageFile, Header const& i_header )
+    ImageData ReadImageData( std::ifstream & io_imageFile, Header const& i_header )
     {
         ImageData imageData;
 
-        i_imageFile.seekg( static_cast<std::ios::off_type>(sizeof(Footer)), std::ios::beg );
+        io_imageFile.seekg( static_cast<std::ios::off_type>(sizeof(Footer)), std::ios::beg );
 
         if ( i_header.m_idLength[0] > 0 )
         {
             imageData.m_imageID = std::unique_ptr<char[]>{ new char [ i_header.m_idLength[0] ] };
-            i_imageFile.read( imageData.m_imageID.get(), i_header.m_idLength[0] );
+            io_imageFile.read( imageData.m_imageID.get(), i_header.m_idLength[0] );
 
-            if ( !i_imageFile.good() )
+            if ( !io_imageFile.good() )
             {
                 throw 2;
             }
         }
 
-        if ( i_header.m_colorMapType[0] == 1 )
+        if ( i_header.m_colorMapType[0] == ColorMap::k_included )
         {
             int const colorEntrySize = BitsToBytes( i_header.m_colorMapSpec[4] );
             int const colorMapSize = UCharArrayLEToInt( &i_header.m_colorMapSpec[2], 2 ) * colorEntrySize;
 
             imageData.m_colorMap = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(colorMapSize) ] };
-            i_imageFile.read( imageData.m_colorMap.get(), colorMapSize );
+            io_imageFile.read( imageData.m_colorMap.get(), colorMapSize );
 
-            if ( !i_imageFile.good() )
+            if ( !io_imageFile.good() )
             {
                 throw 3;
             }
         }
 
-        if ( i_header.m_imageType[0] != 0 )
+        if ( i_header.m_imageType[0] != ImageType::k_noData )
         {
             int const width = UCharArrayLEToInt( &i_header.m_imageSpec[4], 2 );
             int const height = UCharArrayLEToInt( &i_header.m_imageSpec[6], 2 );
@@ -164,24 +173,54 @@ namespace tga
             int const imageSize = width * height * pixelDepth;
 
             imageData.m_imageData = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(imageSize) ] };
-            i_imageFile.read( imageData.m_imageData.get(), imageSize );
+            io_imageFile.read( imageData.m_imageData.get(), imageSize );
 
-            if ( i_imageFile.good() )
+            if ( io_imageFile.good() )
             {
                 throw 4;
             }
+
+            if ( i_header.m_imageSpec[9] & ImageOrigin::k_right )
+            {
+                // Mirror data vertically
+                auto buffer = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(imageSize) ] };
+                for ( int row = 0; row < height; ++row )
+                {
+                    for ( int column = 0; column < width; ++column )
+                    {
+                        std::size_t const sourcePosition = static_cast<std::size_t>( (row*width+column)*pixelDepth );
+                        std::size_t const targetPosition = static_cast<std::size_t>( imageSize )-sourcePosition-static_cast<std::size_t>( pixelDepth );
+                        std::memcpy( &buffer[targetPosition], &imageData.m_imageData[sourcePosition], static_cast<std::size_t>( pixelDepth ) );
+                    }
+                }
+                std::swap( imageData.m_imageData, buffer );
+            }
+            if ( i_header.m_imageSpec[9] & ImageOrigin::k_top )
+            {
+                // Mirror data horizontally
+                auto buffer = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(imageSize) ] };
+                for ( int row = 0; row < height; ++row )
+                {
+                    std::size_t const sourcePosition = static_cast<std::size_t>( (row*width)*pixelDepth );
+                    std::size_t const targetPosition = static_cast<std::size_t>( imageSize )-sourcePosition-static_cast<std::size_t>( pixelDepth*width );
+                    std::memcpy( &buffer[targetPosition], &imageData.m_imageData[sourcePosition], static_cast<std::size_t>( pixelDepth*width ) );
+                }
+                std::swap( imageData.m_imageData, buffer );
+            }
         }
+
+
 
         return imageData;
     }
 
-    Footer ReadFooter( std::ifstream & i_imageFile )
+    Footer ReadFooter( std::ifstream & io_imageFile )
     {
         Footer footer;
-        i_imageFile.seekg( -static_cast<std::ios::off_type>(sizeof(Footer)), std::ios::end );
-        i_imageFile.read( reinterpret_cast<char*>(&footer), static_cast<std::streamsize>(sizeof( Footer )) );
+        io_imageFile.seekg( -static_cast<std::ios::off_type>(sizeof(Footer)), std::ios::end );
+        io_imageFile.read( reinterpret_cast<char*>(&footer), static_cast<std::streamsize>(sizeof( Footer )) );
 
-        if ( !i_imageFile.good() )
+        if ( !io_imageFile.good() )
         {
             throw 0;
         }
