@@ -33,6 +33,7 @@ namespace tga
             int const& GetWidth() const;
             int const& GetHeight() const;
             PixelFormat const& GetPixelFormat() const;
+            void FlipAlpha();
     };
 }
 

@@ -35,8 +35,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/src/Image.o \
-	${OBJECTDIR}/src/tga.o
+	${OBJECTDIR}/src/TGA/Image.o \
+	${OBJECTDIR}/src/TGA/tga.o
 
 
 # C Compiler Flags
@@ -65,15 +65,15 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/liblibtga.a: ${OBJECTFILES}
 	${AR} -rv ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/liblibtga.a ${OBJECTFILES} 
 	$(RANLIB) ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/liblibtga.a
 
-${OBJECTDIR}/src/Image.o: src/Image.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
+${OBJECTDIR}/src/TGA/Image.o: src/TGA/Image.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src/TGA
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Image.o src/Image.cpp
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/TGA/Image.o src/TGA/Image.cpp
 
-${OBJECTDIR}/src/tga.o: src/tga.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
+${OBJECTDIR}/src/TGA/tga.o: src/TGA/tga.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src/TGA
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/tga.o src/tga.cpp
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/TGA/tga.o src/TGA/tga.cpp
 
 # Subprojects
 .build-subprojects:
