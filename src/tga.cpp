@@ -209,8 +209,6 @@ namespace tga
             }
         }
 
-
-
         return imageData;
     }
 
@@ -240,16 +238,16 @@ namespace tga
         Footer const footer = ReadFooter( imageFile );
         if ( footer.m_signature == k_signature )
         {
-
+            // Read extension and developer areas
         }
 
         Header const header = ReadHeader( imageFile );
+        ImageData imageData = ReadImageData( imageFile, header );
 
-        ImageData const imageData = ReadImageData( imageFile, header );
-
-
-
-        Image image;
+        Image image { UCharArrayLEToInt( &header.m_imageSpec[4], 2 ),
+                      UCharArrayLEToInt( &header.m_imageSpec[6], 2 ),
+                      PixelFormat::e_grayscale8,
+                      std::move( imageData.m_imageData ) };
         return image;
     }
 }

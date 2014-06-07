@@ -19,13 +19,14 @@ namespace tga
 
     class Image
     {
-        std::unique_ptr<unsigned char[]> m_data;
+        std::unique_ptr<char[]> m_data;
         PixelFormat m_pixelFormat;
         int m_width;
         int m_height;
 
         public:
-            unsigned char const* Data() const;
+            Image( int const& i_width, int const& i_height, PixelFormat const& i_pixelFormat, std::unique_ptr<char[]> c_data );
+            char const* Data() const;
             int const& GetWidth() const;
             int const& GetHeight() const;
             PixelFormat const& GetPixelFormat() const;
