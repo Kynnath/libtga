@@ -129,7 +129,7 @@ namespace tga
     {
         ImageData imageData;
 
-        io_imageFile.seekg( static_cast<std::ios::off_type>(sizeof(Footer)), std::ios::beg );
+        io_imageFile.seekg( static_cast<std::ios::off_type>(sizeof(Header)), std::ios::beg );
 
         if ( i_header.m_idLength[0] > 0 )
         {
