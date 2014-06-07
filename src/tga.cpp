@@ -13,6 +13,7 @@
 #include <fstream>
 #include <memory>
 #include <vector>
+#include "TLS/Tools.hpp"
 
 namespace tga
 {
@@ -31,6 +32,17 @@ namespace tga
         std::unique_ptr<char[]> m_imageID;
         std::unique_ptr<char[]> m_colorMap;
         std::unique_ptr<char[]> m_imageData;
+        PixelFormat m_pixelFormat;
+
+        static std::array<PixelFormat,4> const k_formatTable;
+    };
+
+    std::array<PixelFormat,4> const ImageData::k_formatTable =
+    {
+        PixelFormat::e_BW8,
+        PixelFormat::e_ABW16,
+        PixelFormat::e_RGB24,
+        PixelFormat::e_ARGB32
     };
 
     struct ExtensionArea
@@ -60,10 +72,12 @@ namespace tga
         std::array<unsigned char,16> m_signature;
         std::array<unsigned char, 1> m_dot;
         std::array<unsigned char, 1> m_null;
+
+        static std::array<unsigned char,16> const k_signature;
     };
     static_assert( sizeof(Footer) == 26, "Footer has padding." );
 
-    std::array<unsigned char,16> const k_signature =
+    std::array<unsigned char,16> const Footer::k_signature =
     {
         'T','R','U','E','V','I','S','I','O','N','-','X','F','I','L','E'
     };
@@ -97,30 +111,7 @@ namespace tga
         };
     };
 
-    int BitsToBytes( int const& i_bits );
-    int UCharArrayLEToInt( unsigned char const*const i_char, int const& i_arrayLength );
-    Header ReadHeader( std::ifstream & io_imageFile );
-    ImageData ReadImageData( std::ifstream & io_imageFile, Header const& i_header );
-    Footer ReadFooter( std::ifstream & io_imageFile );
-
-    int BitsToBytes( int const& i_bits )
-    {
-        return ( ( i_bits+7 ) / 8 );
-    }
-
-    int UCharArrayLEToInt( unsigned char const*const i_char, int const& i_arrayLength )
-    {
-        assert( i_arrayLength > 0 && i_arrayLength <= 4 );
-
-        int result = 0;
-        for( auto index = 0; index < i_arrayLength; ++index )
-        {
-            result |= ( i_char[index] << (8*index) );
-        }
-        return result;
-    }
-
-    Header ReadHeader( std::ifstream & io_imageFile )
+    static Header ReadHeader( std::ifstream & io_imageFile )
     {
         Header header;
         io_imageFile.seekg( 0, std::ios::beg );
@@ -134,7 +125,7 @@ namespace tga
         return header;
     }
 
-    ImageData ReadImageData( std::ifstream & io_imageFile, Header const& i_header )
+    static ImageData ReadImageData( std::ifstream & io_imageFile, Header const& i_header )
     {
         ImageData imageData;
 
@@ -153,8 +144,8 @@ namespace tga
 
         if ( i_header.m_colorMapType[0] == ColorMap::k_included )
         {
-            int const colorEntrySize = BitsToBytes( i_header.m_colorMapSpec[4] );
-            int const colorMapSize = UCharArrayLEToInt( &i_header.m_colorMapSpec[2], 2 ) * colorEntrySize;
+            int const colorEntrySize = tls::BitsToBytes( i_header.m_colorMapSpec[4] );
+            int const colorMapSize = tls::UCharArrayLEToInt( &i_header.m_colorMapSpec[2], 2 ) * colorEntrySize;
 
             imageData.m_colorMap = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(colorMapSize) ] };
             io_imageFile.read( imageData.m_colorMap.get(), colorMapSize );
@@ -167,9 +158,9 @@ namespace tga
 
         if ( i_header.m_imageType[0] != ImageType::k_noData )
         {
-            int const width = UCharArrayLEToInt( &i_header.m_imageSpec[4], 2 );
-            int const height = UCharArrayLEToInt( &i_header.m_imageSpec[6], 2 );
-            int const pixelDepth = BitsToBytes( i_header.m_imageSpec[8] );
+            int const width = tls::UCharArrayLEToInt( &i_header.m_imageSpec[4], 2 );
+            int const height = tls::UCharArrayLEToInt( &i_header.m_imageSpec[6], 2 );
+            int const pixelDepth = tls::BitsToBytes( i_header.m_imageSpec[8] );
             int const imageSize = width * height * pixelDepth;
 
             imageData.m_imageData = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(imageSize) ] };
@@ -207,12 +198,14 @@ namespace tga
                 }
                 std::swap( imageData.m_imageData, buffer );
             }
+
+            imageData.m_pixelFormat = ImageData::k_formatTable[ static_cast<std::size_t>( pixelDepth/8 - 1 ) ];
         }
 
         return imageData;
     }
 
-    Footer ReadFooter( std::ifstream & io_imageFile )
+    static Footer ReadFooter( std::ifstream & io_imageFile )
     {
         Footer footer;
         io_imageFile.seekg( -static_cast<std::ios::off_type>(sizeof(Footer)), std::ios::end );
@@ -236,7 +229,7 @@ namespace tga
 
         // Read footer and determine kind of tga file
         Footer const footer = ReadFooter( imageFile );
-        if ( footer.m_signature == k_signature )
+        if ( footer.m_signature == Footer::k_signature )
         {
             // Read extension and developer areas
         }
@@ -244,9 +237,9 @@ namespace tga
         Header const header = ReadHeader( imageFile );
         ImageData imageData = ReadImageData( imageFile, header );
 
-        Image image { UCharArrayLEToInt( &header.m_imageSpec[4], 2 ),
-                      UCharArrayLEToInt( &header.m_imageSpec[6], 2 ),
-                      PixelFormat::e_grayscale8,
+        Image image { tls::UCharArrayLEToInt( &header.m_imageSpec[4], 2 ),
+                      tls::UCharArrayLEToInt( &header.m_imageSpec[6], 2 ),
+                      imageData.m_pixelFormat,
                       std::move( imageData.m_imageData ) };
         return image;
     }

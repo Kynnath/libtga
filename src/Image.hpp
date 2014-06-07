@@ -14,7 +14,10 @@ namespace tga
 {
     enum class PixelFormat
     {
-        e_grayscale8
+        e_ARGB32,
+        e_RGB24,
+        e_ABW16,
+        e_BW8
     };
 
     class Image
