@@ -29,9 +29,9 @@ namespace tga
 
     struct ImageData
     {
-        std::unique_ptr<char[]> m_imageID;
-        std::unique_ptr<char[]> m_colorMap;
-        std::unique_ptr<char[]> m_imageData;
+        std::unique_ptr<unsigned char[]> m_imageID;
+        std::unique_ptr<unsigned char[]> m_colorMap;
+        std::unique_ptr<unsigned char[]> m_imageData;
         PixelFormat m_pixelFormat;
 
         static std::array<PixelFormat,4> const k_formatTable;
@@ -133,8 +133,8 @@ namespace tga
 
         if ( i_header.m_idLength[0] > 0 )
         {
-            imageData.m_imageID = std::unique_ptr<char[]>{ new char [ i_header.m_idLength[0] ] };
-            io_imageFile.read( imageData.m_imageID.get(), i_header.m_idLength[0] );
+            imageData.m_imageID = std::unique_ptr<unsigned char[]>{ new unsigned char [ i_header.m_idLength[0] ] };
+            io_imageFile.read( reinterpret_cast<char*>( imageData.m_imageID.get() ), i_header.m_idLength[0] );
 
             if ( !io_imageFile.good() )
             {
@@ -147,8 +147,8 @@ namespace tga
             int const colorEntrySize = tls::BitsToBytes( i_header.m_colorMapSpec[4] );
             int const colorMapSize = tls::UCharArrayLEToInt( &i_header.m_colorMapSpec[2], 2 ) * colorEntrySize;
 
-            imageData.m_colorMap = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(colorMapSize) ] };
-            io_imageFile.read( imageData.m_colorMap.get(), colorMapSize );
+            imageData.m_colorMap = std::unique_ptr<unsigned char[]>{ new unsigned char [ static_cast<unsigned int>(colorMapSize) ] };
+            io_imageFile.read( reinterpret_cast<char*>( imageData.m_colorMap.get() ), colorMapSize );
 
             if ( !io_imageFile.good() )
             {
@@ -163,10 +163,10 @@ namespace tga
             int const pixelDepth = tls::BitsToBytes( i_header.m_imageSpec[8] );
             int const imageSize = width * height * pixelDepth;
 
-            imageData.m_imageData = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(imageSize) ] };
-            io_imageFile.read( imageData.m_imageData.get(), imageSize );
+            imageData.m_imageData = std::unique_ptr< unsigned char[]>{ new unsigned char [ static_cast<unsigned int>(imageSize) ] };
+            io_imageFile.read( reinterpret_cast<char*>( imageData.m_imageData.get() ), imageSize );
 
-            if ( io_imageFile.good() )
+            if ( !io_imageFile.good() )
             {
                 throw 4;
             }
@@ -174,7 +174,7 @@ namespace tga
             if ( i_header.m_imageSpec[9] & ImageOrigin::k_right )
             {
                 // Mirror data vertically
-                auto buffer = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(imageSize) ] };
+                auto buffer = std::unique_ptr< unsigned char[]>{ new unsigned char [ static_cast<unsigned int>(imageSize) ] };
                 for ( int row = 0; row < height; ++row )
                 {
                     for ( int column = 0; column < width; ++column )
@@ -189,7 +189,7 @@ namespace tga
             if ( i_header.m_imageSpec[9] & ImageOrigin::k_top )
             {
                 // Mirror data horizontally
-                auto buffer = std::unique_ptr<char[]>{ new char [ static_cast<unsigned int>(imageSize) ] };
+                auto buffer = std::unique_ptr<unsigned char[]>{ new unsigned char [ static_cast<unsigned int>(imageSize) ] };
                 for ( int row = 0; row < height; ++row )
                 {
                     std::size_t const sourcePosition = static_cast<std::size_t>( (row*width)*pixelDepth );
@@ -199,7 +199,7 @@ namespace tga
                 std::swap( imageData.m_imageData, buffer );
             }
 
-            imageData.m_pixelFormat = ImageData::k_formatTable[ static_cast<std::size_t>( pixelDepth/8 - 1 ) ];
+            imageData.m_pixelFormat = ImageData::k_formatTable[ static_cast<std::size_t>( pixelDepth - 1 ) ];
         }
 
         return imageData;

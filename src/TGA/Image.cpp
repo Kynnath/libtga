@@ -11,14 +11,14 @@
 
 namespace tga
 {
-    Image::Image( int const& i_width, int const& i_height, PixelFormat const& i_pixelFormat, std::unique_ptr<char[]> c_data )
+    Image::Image( int const& i_width, int const& i_height, PixelFormat const& i_pixelFormat, std::unique_ptr<unsigned char[]> c_data )
         : m_data { std::move( c_data ) }
         , m_pixelFormat { i_pixelFormat }
         , m_width { i_width }
         , m_height { i_height }
     {}
 
-    char const* Image::Data() const
+    unsigned char const* Image::Data() const
     {
         return m_data.get();
     }
@@ -44,7 +44,7 @@ namespace tga
         unsigned int const step = ( m_pixelFormat == PixelFormat::e_ABW16 )? 2:4;
         for ( unsigned int pixel = 0; pixel < imageSize; ++pixel )
         {
-            char alpha = m_data[ pixel*step ];
+            auto alpha = m_data[ pixel*step ];
             std::memmove( &m_data[ pixel*step ], &m_data[ (pixel*step)+1 ], step-1 );
             m_data[ (pixel*step) + (step-1) ] = alpha;
         }
