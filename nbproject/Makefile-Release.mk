@@ -43,8 +43,8 @@ OBJECTFILES= \
 CFLAGS=
 
 # CC Compiler Flags
-CCFLAGS=
-CXXFLAGS=
+CCFLAGS=-Wfatal-errors -Wall -Wextra -pedantic -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wfloat-equal -Wundef -Wshadow -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wsign-conversion -Wlogical-op -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wpacked -Wredundant-decls -Wunreachable-code
+CXXFLAGS=-Wfatal-errors -Wall -Wextra -pedantic -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wfloat-equal -Wundef -Wshadow -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wsign-conversion -Wlogical-op -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wpacked -Wredundant-decls -Wunreachable-code
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -68,12 +68,12 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/liblibtga.a: ${OBJECTFILES}
 ${OBJECTDIR}/src/TGA/Image.o: src/TGA/Image.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src/TGA
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/TGA/Image.o src/TGA/Image.cpp
+	$(COMPILE.cc) -O2 -Wall -s -I../libtools/src -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/TGA/Image.o src/TGA/Image.cpp
 
 ${OBJECTDIR}/src/TGA/tga.o: src/TGA/tga.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src/TGA
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/TGA/tga.o src/TGA/tga.cpp
+	$(COMPILE.cc) -O2 -Wall -s -I../libtools/src -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/TGA/tga.o src/TGA/tga.cpp
 
 # Subprojects
 .build-subprojects:
