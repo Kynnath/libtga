@@ -5,8 +5,8 @@
  * Created on 30 de mayo de 2014, 12:34
  */
 
-#ifndef IMAGE_HPP
-#define	IMAGE_HPP
+#ifndef TGA_IMAGE_HPP
+#define	TGA_IMAGE_HPP
 
 #include <memory>
 
@@ -37,5 +37,5 @@ namespace tga
     };
 }
 
-#endif	/* IMAGE_HPP */
+#endif	/* TGA_IMAGE_HPP */
 
