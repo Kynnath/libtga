@@ -35,7 +35,6 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/src/TGA/Image.o \
 	${OBJECTDIR}/src/TGA/tga.o
 
 
@@ -65,15 +64,10 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/liblibtga.a: ${OBJECTFILES}
 	${AR} -rv ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/liblibtga.a ${OBJECTFILES} 
 	$(RANLIB) ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/liblibtga.a
 
-${OBJECTDIR}/src/TGA/Image.o: src/TGA/Image.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src/TGA
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -Wall -I../libtools/src -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/TGA/Image.o src/TGA/Image.cpp
-
 ${OBJECTDIR}/src/TGA/tga.o: src/TGA/tga.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src/TGA
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -Wall -I../libtools/src -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/TGA/tga.o src/TGA/tga.cpp
+	$(COMPILE.cc) -g -Werror -I../../../lib/glew-1.12.0/include -I../libgltools/src -I../libtools/src -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/TGA/tga.o src/TGA/tga.cpp
 
 # Subprojects
 .build-subprojects:

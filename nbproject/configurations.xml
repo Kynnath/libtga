@@ -4,7 +4,6 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>src/TGA/Image.hpp</itemPath>
       <itemPath>src/TGA/tga.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
@@ -14,7 +13,6 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>src/TGA/Image.cpp</itemPath>
       <itemPath>src/TGA/tga.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -41,18 +39,16 @@
         <ccTool>
           <architecture>2</architecture>
           <incDir>
+            <pElem>../../../lib/glew-1.12.0/include</pElem>
+            <pElem>../libgltools/src</pElem>
             <pElem>../libtools/src</pElem>
           </incDir>
           <commandLine>-Wfatal-errors -Wall -Wextra -pedantic -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wswitch-default -Wfloat-equal -Wshadow -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wsign-conversion -Wlogical-op -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wpacked -Wredundant-decls -Wunreachable-code -Winvalid-pch -Wvolatile-register-var -Wdisabled-optimization -Wstack-protector -std=c++1y</commandLine>
-          <warningLevel>2</warningLevel>
+          <warningLevel>3</warningLevel>
         </ccTool>
         <archiverTool>
         </archiverTool>
       </compileType>
-      <item path="src/TGA/Image.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/TGA/Image.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="src/TGA/tga.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/TGA/tga.hpp" ex="false" tool="3" flavor2="0">
@@ -73,10 +69,12 @@
           <stripSymbols>true</stripSymbols>
           <architecture>2</architecture>
           <incDir>
+            <pElem>../../../lib/glew-1.12.0/include</pElem>
+            <pElem>../libgltools/src</pElem>
             <pElem>../libtools/src</pElem>
           </incDir>
           <commandLine>-Wfatal-errors -Wall -Wextra -pedantic -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wswitch-default -Wfloat-equal -Wshadow -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wsign-conversion -Wlogical-op -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wpacked -Wredundant-decls -Wunreachable-code -Winvalid-pch -Wvolatile-register-var -Wdisabled-optimization -Wstack-protector -std=c++1y</commandLine>
-          <warningLevel>2</warningLevel>
+          <warningLevel>3</warningLevel>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -87,10 +85,6 @@
         <archiverTool>
         </archiverTool>
       </compileType>
-      <item path="src/TGA/Image.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/TGA/Image.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="src/TGA/tga.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/TGA/tga.hpp" ex="false" tool="3" flavor2="0">

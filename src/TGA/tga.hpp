@@ -9,11 +9,11 @@
 #define	TGA_HPP
 
 #include <string>
-#include "Image.hpp"
+#include "GLT/Image.hpp"
 
 namespace tga
 {
-    Image MakeImage( std::string const& i_filename );
+  glt::Image MakeImage(std::string const& i_filename);
 }
 
 #endif	/* TGA_HPP */
